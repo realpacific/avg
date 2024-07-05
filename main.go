@@ -12,6 +12,10 @@ type PriceCount struct {
 	count string
 }
 
+func init() {
+
+}
+
 // Takes arguments and calculates average or calculates the amount (i.e. count) to get that specific average.
 //
 // The first argument without ":" is considered as the expected price. If provided, it calculates the amount to be bought to get a specific average.
@@ -42,46 +46,51 @@ func main() {
 
 	priceCountPairs := make([]PriceCount, len(arguments))
 
-	for _, arg := range arguments {
+	for i, arg := range arguments {
 		trim := strings.TrimSpace(arg)
 		segments := strings.Split(trim, ":")
 		priceStr := segments[0]
 		count := segments[1]
-		priceCountPairs = append(priceCountPairs, PriceCount{price: priceStr, count: count})
+		priceCountPairs[i] = PriceCount{price: priceStr, count: count}
 	}
 
 	if expectedResult == "" {
 		calculateAverage(priceCountPairs)
 	} else {
-		var unknownPriceCountPair PriceCount
-		var knownPriceCountPair = make([]PriceCount, len(arguments)-1)
-		separateUnknownAndKnowns(priceCountPairs, &unknownPriceCountPair, &knownPriceCountPair)
-
-		expectedPrice := toFloat(expectedResult)
-
-		denominator := toFloat(unknownPriceCountPair.price) - expectedPrice
-		var numerator float64 = 0
-		for _, pc := range knownPriceCountPair {
-			numerator += expectedPrice * toFloat(pc.count)
-		}
-		for _, pc := range knownPriceCountPair {
-			numerator -= toFloat(pc.count) * toFloat(pc.price)
-		}
-		fmt.Println("-------------------")
-		fmt.Printf(
-			"You need %.2f @ %.2f to get %.2f\n",
-			numerator/denominator,
-			toFloat(unknownPriceCountPair.price),
-			expectedPrice,
-		)
-
+		calculateCountForExpectedPrice(priceCountPairs, expectedResult)
 	}
+}
+
+func calculateCountForExpectedPrice(priceCountPairs []PriceCount, expectedResult string) {
+	var unknownPriceCountPair PriceCount
+	var knownPriceCountPair []PriceCount
+	separateUnknownAndKnowns(priceCountPairs, &unknownPriceCountPair, &knownPriceCountPair)
+
+	expectedPrice := toFloat(expectedResult)
+
+	denominator := toFloat(unknownPriceCountPair.price) - expectedPrice
+	var numerator float64 = 0
+	fmt.Printf("PriceCountPairs: %v\n", knownPriceCountPair)
+
+	for _, pc := range knownPriceCountPair {
+		numerator += expectedPrice * toFloat(pc.count)
+	}
+	for _, pc := range knownPriceCountPair {
+		numerator -= toFloat(pc.count) * toFloat(pc.price)
+	}
+	fmt.Println("-------------------")
+	fmt.Printf(
+		"You need %.2f @ %.2f to get %.2f\n",
+		numerator/denominator,
+		toFloat(unknownPriceCountPair.price),
+		expectedPrice,
+	)
 }
 
 func toFloat(price string) float64 {
 	p, err := strconv.ParseFloat(price, 64)
 	if err != nil {
-		panic(any(fmt.Printf("invalid argument provided: %v\n", price)))
+		panic(any(fmt.Sprintf("invalid argument provided: %v %v\n\n", price, err)))
 	}
 	return p
 }
